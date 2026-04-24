@@ -1,0 +1,6 @@
+backend: python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
+
+Front End:
+1) cd afr_app/frontend
+2) python -m http.server 5500
+3) http://127.0.0.1:5500

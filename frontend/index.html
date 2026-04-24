@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>ACBAR Vehicle Tender Scraper</title>
+  <style>
+    :root{
+      --bg:#f6f8fc;
+      --card:#ffffff;
+      --text:#0f172a;
+      --muted:#64748b;
+      --line:#e6edf7;
+      --brand:#2563eb;
+      --brand2:#1d4ed8;
+      --good:#16a34a;
+      --warn:#f59e0b;
+      --bad:#e11d48;
+      --shadow: 0 12px 30px rgba(15,23,42,.08);
+      --radius:16px;
+      --radius2:12px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+    }
+
+    [data-theme="dark"]{
+      --bg:#0b1220;
+      --card:#0f1a2e;
+      --text:#e8eefc;
+      --muted:#a9b7d6;
+      --line:#203556;
+      --brand:#7aa2ff;
+      --brand2:#5b8cff;
+      --shadow: 0 12px 30px rgba(0,0,0,.35);
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:var(--font);
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .wrap{ max-width: 1150px; margin: 26px auto; padding: 0 18px 40px; }
+
+    header{
+      display:flex; align-items:flex-start; justify-content:space-between; gap:16px;
+      margin-bottom: 14px;
+    }
+    h1{ margin:0 0 6px; font-size: 22px; letter-spacing:.2px; }
+    .sub{ margin:0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+
+    .topRight{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+
+    .chip{
+      display:inline-flex; align-items:center; gap:8px;
+      padding: 9px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--card) 92%, transparent);
+      box-shadow: var(--shadow);
+      font-size: 12px;
+      color: var(--muted);
+      white-space:nowrap;
+    }
+    .dot{ width:10px;height:10px;border-radius:99px; background: var(--warn); }
+    .dot.good{ background: var(--good); }
+    .dot.bad{ background: var(--bad); }
+
+    .toggle{
+      display:inline-flex; align-items:center; gap:8px;
+      padding: 9px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--card);
+      box-shadow: var(--shadow);
+      font-size: 12px;
+      cursor:pointer;
+      user-select:none;
+      color: var(--muted);
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 14px;
+    }
+
+    .card{
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+
+    .card h2{ margin:0 0 10px; font-size: 14px; }
+    .hint{ color: var(--muted); font-size: 12px; margin: -4px 0 12px; }
+
+    .controls{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      align-items:end;
+    }
+
+    label{ display:block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    input, select{
+      width:100%;
+      padding: 10px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--card) 85%, #0000);
+      color: var(--text);
+      outline:none;
+    }
+
+    .actions{
+      display:flex; gap:10px; align-items:center; justify-content:space-between;
+      margin-top: 12px; flex-wrap:wrap;
+    }
+
+    .btn{
+      appearance:none;
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--brand) 12%, var(--card));
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      cursor:pointer;
+      font-weight: 700;
+      font-size: 13px;
+      transition: background .15s ease, transform .05s ease;
+    }
+    .btn:hover{ background: color-mix(in srgb, var(--brand) 18%, var(--card)); }
+    .btn:active{ transform: translateY(1px); }
+
+    .btn.primary{
+      background: var(--brand);
+      border-color: color-mix(in srgb, var(--brand) 80%, #0000);
+      color: #fff;
+    }
+    .btn.primary:hover{ background: var(--brand2); }
+
+    .btn.secondary{ background: color-mix(in srgb, var(--text) 6%, var(--card)); }
+    .btn.warn{ background: color-mix(in srgb, var(--warn) 18%, var(--card)); }
+    .btn.danger{ background: color-mix(in srgb, var(--bad) 14%, var(--card)); }
+
+    .mono{ font-family: var(--mono); }
+
+    .statusLine{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      margin-bottom: 10px;
+    }
+    .badge{
+      display:inline-flex; align-items:center; gap:8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--text) 4%, var(--card));
+      color: var(--muted);
+    }
+    .badge.good{ border-color: color-mix(in srgb, var(--good) 35%, var(--line)); }
+    .badge.warn{ border-color: color-mix(in srgb, var(--warn) 35%, var(--line)); }
+    .badge.bad{ border-color: color-mix(in srgb, var(--bad) 35%, var(--line)); }
+
+    .progress{
+      height: 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--text) 6%, var(--card));
+      overflow:hidden;
+      margin: 10px 0 12px;
+    }
+    .bar{
+      height:100%;
+      width:0%;
+      background: linear-gradient(90deg, var(--brand), color-mix(in srgb, var(--good) 75%, var(--brand)));
+      transition: width .35s ease;
+    }
+
+    .metrics{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .metric{
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 10px;
+      background: color-mix(in srgb, var(--text) 4%, var(--card));
+    }
+    .metric .k{ color: var(--muted); font-size: 11px; margin-bottom: 5px; }
+    .metric .v{ font-size: 16px; font-weight: 900; }
+
+    .tableTop{
+      display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+      margin-bottom: 10px;
+    }
+    .search{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .search input{ width: 340px; max-width: 100%; }
+
+    table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      border-radius: var(--radius);
+      overflow:hidden;
+      border: 1px solid var(--line);
+      background: var(--card);
+    }
+    thead th{
+      background: color-mix(in srgb, var(--text) 4%, var(--card));
+      color: var(--muted);
+      font-size: 12px;
+      text-align:left;
+      padding: 10px;
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    tbody td{
+      padding: 10px;
+      font-size: 13px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+    tbody tr:hover td{ background: color-mix(in srgb, var(--brand) 6%, var(--card)); }
+
+    a{ color: var(--brand); text-decoration:none; font-weight: 700; }
+    a:hover{ text-decoration: underline; }
+
+    .footerNote{ color: var(--muted); font-size: 12px; margin-top: 12px; }
+
+    @media (max-width: 960px){
+      .grid{ grid-template-columns: 1fr; }
+      .controls{ grid-template-columns: 1fr; }
+      .metrics{ grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>ACBAR Vehicle Tender Scraper</h1>
+        <!-- <p class="sub">Vehicle-only tenders, realtime CSV, attachments saved by tender id. Pause, resume, or stop anytime.</p> -->
+      </div>
+
+      <div class="topRight">
+        <div class="chip">
+          <span id="apiDot" class="dot"></span>
+          <span id="apiText">API not checked</span>
+        </div>
+
+        <div id="themeToggle" class="toggle" title="Switch theme">
+          <span>Theme</span>
+          <strong id="themeLabel">Light</strong>
+        </div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Run a scrape</h2>
+        <div class="hint">Pages: use <b>all</b> or a number like <b>5</b>.</div>
+
+        <div class="controls">
+          <div>
+            <label>Pages</label>
+            <input id="pages" value="all"/>
+          </div>
+
+          <div>
+            <label>Headless</label>
+            <select id="headless">
+              <option value="false" selected>false (see Chrome)</option>
+              <option value="true">true (server mode)</option>
+            </select>
+          </div>
+
+          <div>
+            <label>Download attachments</label>
+            <select id="download">
+              <option value="true" selected>true</option>
+              <option value="false">false (faster)</option>
+            </select>
+          </div>
+
+          <div>
+            <label>Slow motion</label>
+            <input id="slow" value="0.3"/>
+          </div>
+
+          <div style="grid-column: 1 / -1;">
+            <label>ChromeDriver path (optional)</label>
+            <input id="chromedriver" placeholder="C:\WebDrivers\chromedriver.exe"/>
+          </div>
+        </div>
+
+        <div class="actions">
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button id="startBtn" class="btn primary">Start</button>
+            <button id="pauseBtn" class="btn warn" disabled>Pause</button>
+            <button id="resumeBtn" class="btn secondary" disabled>Resume</button>
+            <button id="stopBtn" class="btn danger" disabled>Stop</button>
+          </div>
+
+          <div class="chip">
+            Job <span id="jobId" class="mono">none</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="statusLine">
+          <h2 style="margin:0;">Status</h2>
+          <span id="stateBadge" class="badge warn"><b id="stateText">idle</b></span>
+        </div>
+
+        <div class="sub" id="statusMsg">No job running.</div>
+
+        <div class="progress"><div id="progBar" class="bar"></div></div>
+
+        <div class="metrics">
+          <div class="metric">
+            <div class="k">Page</div>
+            <div class="v" id="mPage">0</div>
+          </div>
+          <div class="metric">
+            <div class="k">New vehicle tenders</div>
+            <div class="v" id="mNew">0</div>
+          </div>
+          <div class="metric">
+            <div class="k">Skipped non-vehicle</div>
+            <div class="v" id="mSkip">0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px;">
+      <div class="tableTop">
+        <div>
+          <h2 style="margin:0 0 6px;">Results</h2>
+          <div class="sub" id="resultsInfo">Start a job to see results.</div>
+        </div>
+
+        <div class="search">
+          <input id="search" placeholder="Search by title, org, id, date..."/>
+          <span class="chip">Records <span id="recCount" class="mono">0</span></span>
+          <!-- <button id="refreshBtn" class="btn secondary">Refresh</button> -->
+        </div>
+      </div>
+
+      <div style="overflow:auto; border-radius: var(--radius);">
+        <table>
+          <thead>
+            <tr>
+              <th style="min-width:120px;">id</th>
+              <th style="min-width:360px;">Title</th>
+              <th style="min-width:220px;">Organization</th>
+              <th style="min-width:120px;">Close Date</th>
+              <th style="min-width:90px;">Link</th>
+              <th style="min-width:140px;">Attachments</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr><td colspan="6" class="sub" style="padding:14px;">No data yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="footerNote">
+        <!-- Downloads are saved by tender id folder. Use “download zip” to fetch attachments from UI. -->
+      </div>
+    </div>
+  </div>
+
+<script>
+  const API = "http://127.0.0.1:8000";
+
+  let autoResultsTimer = null;
+  let currentJobId = null;
+  let pollTimer = null;
+  let allRows = [];
+
+  const $ = (id) => document.getElementById(id);
+
+  function setTheme(theme){
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("theme", theme);
+    $("themeLabel").textContent = theme === "dark" ? "Dark" : "Light";
+  }
+
+  function initTheme(){
+    const saved = localStorage.getItem("theme") || "light";
+    setTheme(saved);
+  }
+
+  function setApiStatus(ok){
+    const dot = $("apiDot");
+    dot.classList.remove("good","bad");
+    if(ok){ dot.classList.add("good"); $("apiText").textContent = "API online"; }
+    else { dot.classList.add("bad"); $("apiText").textContent = "API offline"; }
+  }
+
+  async function checkApi(){
+    try{
+      const r = await fetch(`${API}/`);
+      if(!r.ok) throw new Error("bad");
+      setApiStatus(true);
+    }catch(e){
+      setApiStatus(false);
+    }
+  }
+
+  function setBadge(state){
+    const s = (state || "idle").toLowerCase();
+    $("stateText").textContent = s;
+
+    const b = $("stateBadge");
+    b.classList.remove("good","warn","bad");
+    if(s === "done") b.classList.add("good");
+    else if(s === "error") b.classList.add("bad");
+    else b.classList.add("warn");
+  }
+
+  function updateButtons(state){
+    const s = (state || "idle").toLowerCase();
+
+    const canControl = !!currentJobId && ["running","starting","paused"].includes(s);
+    $("pauseBtn").disabled = !(canControl && s === "running");
+    $("resumeBtn").disabled = !(canControl && s === "paused");
+    $("stopBtn").disabled = !(canControl);
+  }
+
+  function updateProgress(status){
+    const page = Number(status.page || 0);
+    const newAdded = Number(status.new_added || 0);
+
+    let pct = Math.min(95, (page * 8) + (newAdded * 2));
+    const st = (status.state || "").toLowerCase();
+    if(st === "done" || st === "error" || st === "stopped") pct = 100;
+
+    $("progBar").style.width = `${Math.max(2, pct)}%`;
+  }
+
+  async function startJob(){
+    const payload = {
+      pages: $("pages").value.trim() || "all",
+      headless: $("headless").value === "true",
+      download: $("download").value === "true",
+      slow: parseFloat($("slow").value || "0.3"),
+      chromedriver: $("chromedriver").value.trim()
+    };
+
+    const res = await fetch(`${API}/jobs/start`, {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if(!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+
+    currentJobId = data.job_id;
+    $("jobId").textContent = currentJobId;
+
+    $("statusMsg").textContent = "Job started...";
+    $("mPage").textContent = "0";
+    $("mNew").textContent = "0";
+    $("mSkip").textContent = "0";
+
+    setBadge("starting");
+    updateButtons("starting");
+    $("progBar").style.width = "3%";
+
+    if(pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(pollStatus, 1500);
+  }
+
+  async function pollStatus(){
+    if(!currentJobId) return;
+
+    const res = await fetch(`${API}/jobs/${currentJobId}/status`);
+    if(!res.ok) return;
+
+    const s = await res.json();
+
+    $("statusMsg").textContent = s.message || "";
+    $("mPage").textContent = s.page ?? 0;
+    $("mNew").textContent = s.new_added ?? 0;
+    $("mSkip").textContent = s.skipped_non_vehicle ?? 0;
+
+    setBadge(s.state || "running");
+    updateButtons(s.state || "running");
+    updateProgress(s);
+
+    const state = (s.state || "").toLowerCase();
+    // auto refresh results while running
+    if (!autoResultsTimer) {
+    autoResultsTimer = setInterval(loadTenders, 4000);
+    }
+
+    if (["done", "error", "stopped"].includes(state)) {
+    clearInterval(pollTimer);
+    pollTimer = null;
+
+    if (autoResultsTimer) {
+        clearInterval(autoResultsTimer);
+        autoResultsTimer = null;
+    }
+
+    await loadTenders(); // final refresh
+    }
+
+  }
+
+  async function sendControl(action){
+    if(!currentJobId) return;
+    await fetch(`${API}/jobs/${currentJobId}/${action}`, { method:"POST" });
+    // status will update on next poll
+  }
+
+  async function loadTenders(){
+    if(!currentJobId){
+      $("resultsInfo").textContent = "Start a job to see results.";
+      return;
+    }
+    const res = await fetch(`${API}/jobs/${currentJobId}/tenders`);
+    const data = await res.json();
+    allRows = data.tenders || [];
+    $("recCount").textContent = allRows.length;
+    $("resultsInfo").textContent = `Job ${currentJobId}, records: ${allRows.length}`;
+    renderRows(filterRows($("search").value.trim()));
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, m => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    }[m]));
+  }
+
+  function filterRows(q){
+    if(!q) return allRows;
+    const qq = q.toLowerCase();
+    return allRows.filter(r => {
+      const blob = `${r.id||""} ${r.Title||""} ${r.Organization||""} ${r["Close Date"]||""}`.toLowerCase();
+      return blob.includes(qq);
+    });
+  }
+
+  function renderRows(rows){
+    const tb = $("tbody");
+    if(!rows.length){
+      tb.innerHTML = `<tr><td colspan="6" class="sub" style="padding:14px;">No matches.</td></tr>`;
+      return;
+    }
+
+    tb.innerHTML = rows.map(r => {
+      const id = r.id || "";
+      const link = r.Download || "";
+      const title = escapeHtml(r.Title || "");
+      const org = escapeHtml(r.Organization || "");
+      const date = escapeHtml(r["Close Date"] || "");
+      const zipUrl = `${API}/tenders/${id}/download_zip`;
+
+      return `
+        <tr>
+          <td class="mono">${escapeHtml(id)}</td>
+          <td>${title}</td>
+          <td>${org}</td>
+          <td>${date}</td>
+          <td>${link ? `<a href="${link}" target="_blank">open</a>` : ""}</td>
+          <td><a href="${zipUrl}" target="_blank">download zip</a></td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  // events
+  $("startBtn").addEventListener("click", async () => {
+    try{ await startJob(); }
+    catch(e){ alert("Failed to start job:\n" + e.message); }
+  });
+
+  $("pauseBtn").addEventListener("click", () => sendControl("pause"));
+  $("resumeBtn").addEventListener("click", () => sendControl("resume"));
+  $("stopBtn").addEventListener("click", () => sendControl("stop"));
+
+//   $("refreshBtn").addEventListener("click", loadTenders);
+
+  $("search").addEventListener("input", () => {
+    const rows = filterRows($("search").value.trim());
+    $("recCount").textContent = rows.length;
+    renderRows(rows);
+  });
+
+  $("themeToggle").addEventListener("click", () => {
+    const current = localStorage.getItem("theme") || "light";
+    setTheme(current === "light" ? "dark" : "light");
+  });
+
+  // init
+  initTheme();
+  checkApi();
+  setInterval(checkApi, 5000);
+</script>
+</body>
+</html>

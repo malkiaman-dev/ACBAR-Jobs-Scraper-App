@@ -1,0 +1,12 @@
+{
+  "job_id": "01_2026-04-24",
+  "state": "starting",
+  "page": 0,
+  "new_added": 0,
+  "skipped_existing": 0,
+  "skipped_non_vehicle": 0,
+  "last_id": "",
+  "message": "Launching browser",
+  "csv_path": "D:\\Scraper\\acbar_app\\jobs\\01_2026-04-24\\acbar_vehicle_tenders.csv",
+  "download_root": "D:\\Scraper\\acbar_app\\downloads_acbar_all"
+}
